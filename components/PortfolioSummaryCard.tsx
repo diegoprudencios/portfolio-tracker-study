@@ -16,7 +16,7 @@ export function PortfolioSummaryCard({
 }: Props) {
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-end justify-end gap-4 w-fit">
         <div className="space-y-1">
           <p className="text-sm text-white/60">Total value</p>
           <p className="text-3xl font-semibold">{totalValue}</p>

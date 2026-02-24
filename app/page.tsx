@@ -55,7 +55,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white p-6">
-      <div className="mx-auto max-w-md space-y-4">
+      <div className="mx-auto max-w-[1200px] space-y-4">
         <h1 className="text-2xl font-semibold">Portfolio Lite</h1>
 
         <PortfolioSummaryCard
