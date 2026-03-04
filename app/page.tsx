@@ -45,15 +45,14 @@ function calculatePortfolioSummary(holdings: Holding[]) {
 export default function Home() {
   const [isLight, setIsLight] = useState(false);
 
+  // Initialize theme from localStorage on mount
   useEffect(() => {
-    const root = document.documentElement;
-
-    if (isLight) {
-      root.classList.add("light");
-    } else {
-      root.classList.remove("light");
+    const storedTheme = window.localStorage.getItem("theme");
+    if (storedTheme === "light") {
+      document.documentElement.classList.add("light");
+      setIsLight(true);
     }
-  }, [isLight]);
+  }, []);
 
   const { totalValue, pnl24h, changePct } = calculatePortfolioSummary(
     mockHoldings,
@@ -78,7 +77,27 @@ export default function Home() {
           </h1>
           <button
             type="button"
-            onClick={() => setIsLight((prev) => !prev)}
+            onClick={() => {
+              const root = document.documentElement;
+
+              setIsLight((prev) => {
+                const next = !prev;
+
+                if (next) {
+                  root.classList.add("light");
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem("theme", "light");
+                  }
+                } else {
+                  root.classList.remove("light");
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem("theme", "dark");
+                  }
+                }
+
+                return next;
+              });
+            }}
             className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] transition-colors"
             aria-label="Toggle theme"
           >
