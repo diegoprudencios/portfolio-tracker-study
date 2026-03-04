@@ -8,8 +8,12 @@ type Props = {
 export function PerformanceBadge({ value, variant = "pill" }: Props) {
   const isPositive = !isNegative(value);
 
-  const colorClass = isPositive ? "text-emerald-300" : "text-rose-300";
-  const pillClass = isPositive ? "bg-emerald-500/15" : "bg-rose-500/15";
+  const colorClass = isPositive
+    ? "text-[var(--pill-positive-text)]"
+    : "text-[var(--pill-negative-text)]";
+  const pillClass = isPositive
+    ? "bg-[var(--pill-positive-bg)]"
+    : "bg-[var(--pill-negative-bg)]";
 
   if (variant === "text") {
     return <span className={["font-semibold", colorClass].join(" ")}>{value}</span>;

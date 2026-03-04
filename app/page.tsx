@@ -1,7 +1,11 @@
+ "use client";
+
+import { useEffect, useState } from "react";
 import { PortfolioSummaryCard } from "../components/PortfolioSummaryCard";
 import { HoldingsTable } from "../components/HoldingsTable";
 import { mockHoldings, type Holding } from "../lib/mockData";
 import { formatCurrency, formatPercentage } from "../lib/format";
+import { Moon, Sun } from "lucide-react";
 
 function calculatePortfolioSummary(holdings: Holding[]) {
   if (!holdings.length) {
@@ -39,6 +43,18 @@ function calculatePortfolioSummary(holdings: Holding[]) {
 }
 
 export default function Home() {
+  const [isLight, setIsLight] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (isLight) {
+      root.classList.add("light");
+    } else {
+      root.classList.remove("light");
+    }
+  }, [isLight]);
+
   const { totalValue, pnl24h, changePct } = calculatePortfolioSummary(
     mockHoldings,
   );
@@ -54,9 +70,31 @@ export default function Home() {
       : `${pnl24h > 0 ? "+" : ""}${formatCurrency(Math.abs(pnl24h))}`;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white p-6">
-      <div className="mx-auto max-w-[1200px] space-y-4">
-        <h1 className="text-2xl font-semibold">Portfolio Lite</h1>
+    <main className="min-h-screen bg-[var(--bg-base)] text-white p-6">
+      <div className="mx-auto max-w-[600px] space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
+            Portfolio Lite
+          </h1>
+          <button
+            type="button"
+            onClick={() => setIsLight((prev) => !prev)}
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] transition-colors"
+            aria-label="Toggle theme"
+          >
+            {isLight ? (
+              <>
+                <Moon className="h-4 w-4 text-[var(--text-primary)]" />
+                <span>Light</span>
+              </>
+            ) : (
+              <>
+                <Sun className="h-4 w-4 text-[var(--text-primary)]" />
+                <span>Dark</span>
+              </>
+            )}
+          </button>
+        </div>
 
         <PortfolioSummaryCard
           totalValue={totalValueDisplay}
