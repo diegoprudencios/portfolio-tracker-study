@@ -14,7 +14,7 @@ export function HoldingsTable({ holdings }: Props) {
         <div className="flex-1">Asset</div>
         <div className="w-24 text-right">Quantity</div>
         <div className="w-28 text-right">Value</div>
-        <div className="w-20 text-right">24h</div>
+        <div className="w-24 text-right">24h</div>
       </div>
 
       <div className="divide-y divide-[var(--border-subtle)]">

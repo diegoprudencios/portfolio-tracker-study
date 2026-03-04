@@ -71,7 +71,7 @@ export function HoldingRow({ holding }: Props) {
         {formatCurrency(currentValue)}
       </div>
 
-      <div className="w-20 text-right">
+      <div className="w-24 flex items-center justify-end h-8">
         <PerformanceBadge value={changeLabel} />
       </div>
     </div>
