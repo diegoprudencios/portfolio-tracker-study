@@ -249,12 +249,17 @@ export function BubbleField({ holdings }: Props) {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
 
-      // Dot grid
+      // Dot grid — 20px inset padding on all sides, centered within that area
       const spacing = 28;
       const dotRadius = 1;
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
-      for (let gx = spacing; gx < W; gx += spacing) {
-        for (let gy = spacing; gy < H; gy += spacing) {
+      const pad = 20;
+      const gridW = W - pad * 2;
+      const gridH = H - pad * 2;
+      const xStart = pad + (gridW % spacing) / 2;
+      const yStart = pad + (gridH % spacing) / 2;
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      for (let gx = xStart; gx <= W - pad; gx += spacing) {
+        for (let gy = yStart; gy <= H - pad; gy += spacing) {
           ctx.beginPath();
           ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
           ctx.fill();
