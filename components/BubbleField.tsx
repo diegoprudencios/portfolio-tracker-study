@@ -242,6 +242,25 @@ export function BubbleField({ holdings }: Props) {
       ctx.roundRect(0, 0, W, H, 16);
       ctx.clip();
 
+      // Subtle white gradient — 10% at top fading to 3% at bottom
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, "rgba(255,255,255,0.03)");
+      grad.addColorStop(1, "rgba(255,255,255,0.10)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Dot grid
+      const spacing = 28;
+      const dotRadius = 1;
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      for (let gx = spacing; gx < W; gx += spacing) {
+        for (let gy = spacing; gy < H; gy += spacing) {
+          ctx.beginPath();
+          ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
       for (const { body, holding, color, img } of bubbles) {
         const { x, y } = body.position;
         const angle = body.angle;
