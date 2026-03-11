@@ -1,11 +1,8 @@
  "use client";
 
-import { useEffect, useState } from "react";
-import { PortfolioSummaryCard } from "../components/PortfolioSummaryCard";
 import { HoldingsTable } from "../components/HoldingsTable";
 import { mockHoldings, type Holding } from "../lib/mockData";
 import { formatCurrency, formatPercentage } from "../lib/format";
-import { Moon, Sun } from "lucide-react";
 
 function calculatePortfolioSummary(holdings: Holding[]) {
   if (!holdings.length) {
@@ -43,16 +40,6 @@ function calculatePortfolioSummary(holdings: Holding[]) {
 }
 
 export default function Home() {
-  const [isLight, setIsLight] = useState(false);
-
-  // Initialize theme from localStorage on mount
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem("theme");
-    if (storedTheme === "light") {
-      document.documentElement.classList.add("light");
-      setIsLight(true);
-    }
-  }, []);
 
   const { totalValue, pnl24h, changePct } = calculatePortfolioSummary(
     mockHoldings,
@@ -69,60 +56,44 @@ export default function Home() {
       : `${pnl24h > 0 ? "+" : ""}${formatCurrency(Math.abs(pnl24h))}`;
 
   return (
-    <main className="min-h-screen bg-[var(--bg-base)] text-white p-6">
-      <div className="mx-auto max-w-[600px] space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
-            Portfolio Lite
-          </h1>
-          <button
-            type="button"
-            onClick={() => {
-              const root = document.documentElement;
+    <main className="h-screen flex flex-col bg-[#0a0a0a] p-5">
+      <div className="flex flex-1 gap-4 min-h-0">
 
-              setIsLight((prev) => {
-                const next = !prev;
+        {/* Left column — dark placeholder, fills remaining width */}
+        <div className="flex-1 min-h-0 rounded-2xl bg-[#141414]" />
 
-                if (next) {
-                  root.classList.add("light");
-                  if (typeof window !== "undefined") {
-                    window.localStorage.setItem("theme", "light");
-                  }
-                } else {
-                  root.classList.remove("light");
-                  if (typeof window !== "undefined") {
-                    window.localStorage.setItem("theme", "dark");
-                  }
-                }
+        {/* Right column — 450px fixed, vertical stack */}
+        <div className="w-[450px] shrink-0 flex flex-col gap-0 h-full">
 
-                return next;
-              });
-            }}
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] transition-colors"
-            aria-label="Toggle theme"
-          >
-            {isLight ? (
-              <>
-                <Moon className="h-4 w-4 text-[var(--text-primary)]" />
-                <span>Light</span>
-              </>
-            ) : (
-              <>
-                <Sun className="h-4 w-4 text-[var(--text-primary)]" />
-                <span>Dark</span>
-              </>
-            )}
-          </button>
+          {/* Card 1 — Total value */}
+          <div className="relative z-[1] rounded-tl-2xl rounded-tr-2xl border border-white/10 bg-[var(--color-card-wallet)] px-6 pt-5 pb-[60px] flex items-center justify-between">
+            <p className="text-xs font-medium text-black/45">Total value</p>
+            <div className="flex items-center gap-2">
+              <span className="bg-transparent border border-black rounded-full px-2 py-0.5 text-xs font-medium text-[#0A0A0A]">{changePctDisplay}</span>
+              <p className="text-2xl font-semibold text-[#0a0a0a]">{totalValueDisplay}</p>
+            </div>
+          </div>
+
+          {/* Card 2 — 24h P&L */}
+          <div className="-mt-[44px] relative z-[2] rounded-2xl border border-white/10 bg-[var(--color-card-pnl)] px-6 pt-5 pb-[60px] flex items-start justify-between">
+            <p className="text-xs font-medium text-black/45">24h P&L</p>
+            <p className="text-lg font-semibold text-[#0a0a0a]">{pnl24hDisplay}</p>
+          </div>
+
+          {/* Card 3 — Holdings */}
+          <div className="-mt-[44px] relative z-[3] rounded-2xl border border-white/10 bg-[var(--color-card-holdings)] px-6 pt-5 pb-[60px] flex items-start justify-between">
+            <p className="text-xs font-medium text-black/45">Holdings</p>
+            <p className="text-lg font-semibold text-[#0a0a0a]">{holdingsCount} assets</p>
+          </div>
+
+          {/* HoldingsTable — fills remaining height */}
+          <div className="-mt-[44px] relative z-[4] flex-1 min-h-0 rounded-2xl overflow-hidden">
+            <div className="light h-full">
+              <HoldingsTable holdings={mockHoldings} theme="light" />
+            </div>
+          </div>
+
         </div>
-
-        <PortfolioSummaryCard
-          totalValue={totalValueDisplay}
-          changePct={changePctDisplay}
-          pnl24h={pnl24hDisplay}
-          holdingsCount={holdingsCount}
-        />
-
-        <HoldingsTable holdings={mockHoldings} />
       </div>
     </main>
   );

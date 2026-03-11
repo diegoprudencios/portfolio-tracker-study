@@ -1,20 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  /* base */
+  --background: #fff;
   --foreground: #171717;
 
-  /* Dark mode (default) */
-  --bg-base: #0a0a0a;
-  --bg-surface: rgba(255, 255, 255, 0.04);
-  --bg-surface-hover: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.5);
-  --pill-positive-bg: rgba(16, 185, 129, 0.15);
-  --pill-positive-text: #6ee7b7;
-  --pill-negative-bg: rgba(244, 63, 94, 0.15);
-  --pill-negative-text: #fda4af;
+  /* dark theme tokens */
+  --bg-base: #0A0A0A;
+  --bg-surface: #FFFFFF0A;
+  --bg-surface-hover: #FFFFFF14;
+  --bg-surface-subtle: #FFFFFF08;
+  --border-subtle: #FFFFFF14;
+  --text-primary: #FFFFFF;
+  --text-secondary: #FFFFFF80;
+  --positive-text: #6EE7B7;
+  --positive-bg: #10B98126;
+  --negative-text: #FDA4AF;
+  --negative-bg: #F43F5E26;
+
+  /* card colors */
+  --color-card-wallet: #E4A8DB;
+  --color-card-pnl: #C0E4A8;
+  --color-card-holdings: #A8ABE4;
+}
+
+.light {
+  --bg-base: #F5F4F0;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F0EFE9;
+  --bg-surface-subtle: #F5F4F0;
+  --border-subtle: #00000014;
+  --text-primary: #0A0A0A;
+  --text-secondary: #00000073;
+  --positive-text: #15803D;
+  --positive-bg: #DCFCE7;
+  --negative-text: #DC2626;
+  --negative-bg: #FEE2E2;
 }
 
 @theme inline {
@@ -22,29 +43,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html.light {
-  /* Light mode overrides */
-  --background: #f5f4f0;
-  --foreground: #0a0a0a;
-  --bg-base: #f5f4f0;
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #f0efe9;
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --text-primary: #0a0a0a;
-  --text-secondary: rgba(0, 0, 0, 0.45);
-  --pill-positive-bg: #dcfce7;
-  --pill-positive-text: #15803d;
-  --pill-negative-bg: #fee2e2;
-  --pill-negative-text: #dc2626;
 }
 
 html {

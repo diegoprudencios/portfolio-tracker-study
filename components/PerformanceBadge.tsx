@@ -1,32 +1,15 @@
-import { isNegative } from "../lib/format";
-
 type Props = {
   value: string;
   variant?: "pill" | "text";
 };
 
 export function PerformanceBadge({ value, variant = "pill" }: Props) {
-  const isPositive = !isNegative(value);
-
-  const colorClass = isPositive
-    ? "text-[var(--pill-positive-text)]"
-    : "text-[var(--pill-negative-text)]";
-  const pillClass = isPositive
-    ? "bg-[var(--pill-positive-bg)]"
-    : "bg-[var(--pill-negative-bg)]";
-
   if (variant === "text") {
-    return <span className={["font-semibold", colorClass].join(" ")}>{value}</span>;
+    return <span className="text-xs font-semibold text-[#0A0A0A]">{value}</span>;
   }
 
   return (
-    <span
-      className={[
-        "rounded-full px-3 py-1 text-sm font-medium",
-        pillClass,
-        colorClass,
-      ].join(" ")}
-    >
+    <span className="bg-transparent border border-black rounded-full px-2 py-0.5 text-xs font-medium text-[#0A0A0A]">
       {value}
     </span>
   );

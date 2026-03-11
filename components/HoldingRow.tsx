@@ -31,7 +31,7 @@ export function HoldingRow({ holding }: Props) {
               : "bg-[var(--bg-surface-hover)]";
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 text-sm cursor-pointer transition-colors duration-150 ease-out hover:bg-[var(--bg-surface-hover)]">
+    <div className="flex items-center justify-between px-6 py-3 text-sm cursor-pointer transition-colors duration-150 ease-out hover:bg-[var(--bg-surface-hover)]">
       <div className="flex flex-1 items-center gap-3">
         {holding.image && !imageError ? (
           <img
