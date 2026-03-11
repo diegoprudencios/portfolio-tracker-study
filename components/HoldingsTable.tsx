@@ -19,9 +19,11 @@ export function HoldingsTable({ holdings, theme }: Props) {
       </div>
 
       <div className="divide-y divide-[var(--border-subtle)]">
-        {holdings.map((holding) => (
-          <HoldingRow key={holding.id} holding={holding} />
-        ))}
+        {[...holdings]
+          .sort((a, b) => b.quantity * b.currentPrice - a.quantity * a.currentPrice)
+          .map((holding) => (
+            <HoldingRow key={holding.id} holding={holding} />
+          ))}
       </div>
     </section>
   );

@@ -132,7 +132,7 @@ export function BubbleField({ holdings }: Props) {
     const repeller = Bodies.circle(-500, -500, REPELLER_RADIUS, {
       isStatic: true,
       label: "repeller",
-      restitution: 0.6,
+      restitution: 0.8,
       friction: 0,
       frictionAir: 0,
       // Interact with bubbles (0x0001) but not with walls (default 0x0001 category
@@ -165,9 +165,9 @@ export function BubbleField({ holdings }: Props) {
           y: BUBBLE_RADIUS + Math.random() * (H - BUBBLE_RADIUS * 2),
         };
         const body = Bodies.circle(x, y, BUBBLE_RADIUS, {
-          restitution: 0,
-          frictionAir: 0.03,
-          friction: 0.1,
+          restitution: 0.5,
+          frictionAir: 0.008,
+          friction: 0.05,
           label: holding.symbol,
           collisionFilter: { category: 0x0001, mask: 0x0001 | 0x0002 },
         });
@@ -178,14 +178,21 @@ export function BubbleField({ holdings }: Props) {
       }
     });
 
-    // Move repeller to cursor position before each physics step.
-    // Also wake any sleeping bubble within the repeller's influence radius
-    // so static-body collisions aren't silently ignored.
-    const WAKE_RADIUS = REPELLER_RADIUS * 2.5;
+    // Track repeller's real frame-to-frame movement so collision impulses carry
+    // actual momentum instead of hitting with zero velocity.
+    let prevPos = { x: -500, y: -500 };
+    const WAKE_RADIUS = REPELLER_RADIUS * 3.5;
+
     Events.on(engine, "beforeUpdate", () => {
       const pos = mouseRef.current ?? { x: -500, y: -500 };
+
+      // Repeller velocity = how far it moved this frame (capped so it can't tunnel)
+      const vx = Math.max(-30, Math.min(30, pos.x - prevPos.x));
+      const vy = Math.max(-30, Math.min(30, pos.y - prevPos.y));
+      prevPos = { x: pos.x, y: pos.y };
+
       Body.setPosition(repeller, pos);
-      Body.setVelocity(repeller, { x: 0, y: 0 });
+      Body.setVelocity(repeller, { x: vx, y: vy });
 
       if (!mouseRef.current) return;
       const { x: mx, y: my } = mouseRef.current;
@@ -199,7 +206,7 @@ export function BubbleField({ holdings }: Props) {
     });
 
     // Hard clamp: snap any escaped bubble back inside bounds and cap speed
-    const MAX_SPEED = 22;
+    const MAX_SPEED = 35;
     Events.on(engine, "afterUpdate", () => {
       for (const { body } of bubbles) {
         const { x, y } = body.position;
