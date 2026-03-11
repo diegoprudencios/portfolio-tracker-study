@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { type Holding } from "../lib/mockData";
 
-const FILL_RATIO = 0.6;
+const FILL_RATIO = 0.55;
 const PALETTE = ["#F7931A", "#627EEA", "#8247E5", "#26A17B", "#2775CA"];
-const BUBBLE_RADIUS = 40;
-const REPELLER_RADIUS = 56;
+const BUBBLE_RADIUS = 62;
+const REPELLER_RADIUS = 70;
 
 interface Props {
   holdings: Holding[];
