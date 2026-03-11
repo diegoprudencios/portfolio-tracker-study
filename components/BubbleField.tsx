@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Matter from "matter-js";
 import { type Holding } from "../lib/mockData";
 
@@ -100,6 +100,20 @@ export function BubbleField({ holdings }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
+  const [resizeKey, setResizeKey] = useState(0);
+
+  // Rebuild the simulation whenever the container is resized (debounced)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setResizeKey((k) => k + 1), 400);
+    });
+    observer.observe(container);
+    return () => { observer.disconnect(); clearTimeout(timer); };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -369,7 +383,7 @@ export function BubbleField({ holdings }: Props) {
       container.removeEventListener("mousemove", onMove);
       container.removeEventListener("mouseleave", onLeave);
     };
-  }, [holdings]);
+  }, [holdings, resizeKey]);
 
   return (
     <div ref={containerRef} className="w-full h-full bg-[#141414]">
