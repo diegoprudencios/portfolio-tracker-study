@@ -1,8 +1,9 @@
- "use client";
+"use client";
 
+import { useState, useEffect } from "react";
 import { HoldingsTable } from "../components/HoldingsTable";
 import { BubbleField } from "../components/BubbleField";
-import { mockHoldings, type Holding } from "../lib/mockData";
+import { mockHoldings, generateHoldings, type Holding } from "../lib/mockData";
 import { formatCurrency, formatPercentage } from "../lib/format";
 
 function calculatePortfolioSummary(holdings: Holding[]) {
@@ -41,12 +42,16 @@ function calculatePortfolioSummary(holdings: Holding[]) {
 }
 
 export default function Home() {
+  const [holdings, setHoldings] = useState<Holding[]>(mockHoldings);
 
-  const { totalValue, pnl24h, changePct } = calculatePortfolioSummary(
-    mockHoldings,
-  );
+  // Generate fresh random values only on the client, after SSR hydration
+  useEffect(() => {
+    setHoldings(generateHoldings());
+  }, []);
 
-  const holdingsCount = mockHoldings.length;
+  const { totalValue, pnl24h, changePct } = calculatePortfolioSummary(holdings);
+
+  const holdingsCount = holdings.length;
 
   const totalValueDisplay = formatCurrency(totalValue);
   const changePctDisplay = formatPercentage(changePct);
@@ -62,7 +67,7 @@ export default function Home() {
 
         {/* Left column — bubble physics field */}
         <div className="flex-1 min-h-0 rounded-2xl overflow-hidden">
-          <BubbleField holdings={mockHoldings} />
+          <BubbleField holdings={holdings} />
         </div>
 
         {/* Right column — 450px fixed, vertical stack */}
@@ -92,7 +97,7 @@ export default function Home() {
           {/* HoldingsTable — fills remaining height */}
           <div className="-mt-[44px] relative z-[4] flex-1 min-h-0 rounded-2xl overflow-hidden">
             <div className="light h-full">
-              <HoldingsTable holdings={mockHoldings} theme="light" />
+              <HoldingsTable holdings={holdings} theme="light" />
             </div>
           </div>
 

@@ -21,6 +21,40 @@ function symbolColor(symbol: string): string {
   return PALETTE[h % PALETTE.length];
 }
 
+// Poisson disk sampling — random positions with guaranteed minimum separation.
+// Tries up to `attempts` random candidates per point before giving up.
+function samplePositions(
+  count: number,
+  W: number,
+  H: number,
+  radius: number,
+  attempts = 60
+): Array<{ x: number; y: number }> {
+  const minDist = radius * 2 + 2;
+  const minDist2 = minDist * minDist;
+  const pts: Array<{ x: number; y: number }> = [];
+  for (let i = 0; i < count; i++) {
+    let placed = false;
+    for (let t = 0; t < attempts; t++) {
+      const x = radius + Math.random() * (W - radius * 2);
+      const y = radius + Math.random() * (H - radius * 2);
+      const ok = pts.every((p) => {
+        const dx = x - p.x, dy = y - p.y;
+        return dx * dx + dy * dy >= minDist2;
+      });
+      if (ok) { pts.push({ x, y }); placed = true; break; }
+    }
+    if (!placed) {
+      // Space is nearly full — fall back to any position
+      pts.push({
+        x: radius + Math.random() * (W - radius * 2),
+        y: radius + Math.random() * (H - radius * 2),
+      });
+    }
+  }
+  return pts;
+}
+
 function distributeBubbles(
   holdings: Holding[],
   totalBubbles: number
@@ -70,14 +104,19 @@ export function BubbleField({ holdings }: Props) {
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const { Engine, Runner, Bodies, Body, Composite, Events } = Matter;
+    const { Engine, Runner, Bodies, Body, Composite, Events, Sleeping } = Matter;
 
     const W = container.clientWidth;
     const H = container.clientHeight;
     canvas.width = W;
     canvas.height = H;
 
-    const engine = Engine.create({ gravity: { x: 0, y: 1 } });
+    const engine = Engine.create({
+      gravity: { x: 0, y: 1 },
+      positionIterations: 20,
+      velocityIterations: 12,
+      enableSleeping: true,
+    });
 
     // Walls — top, bottom, left, right
     const wt = 60;
@@ -110,6 +149,10 @@ export function BubbleField({ holdings }: Props) {
     const distribution = distributeBubbles(holdings, totalBubbles);
     const bubbles: BubbleEntry[] = [];
 
+    // Poisson disk positions — random-feeling but zero initial overlap
+    const spawnPts = samplePositions(totalBubbles, W, H, BUBBLE_RADIUS);
+    let spawnIdx = 0;
+
     distribution.forEach(({ holding, count }) => {
       const color = symbolColor(holding.symbol);
 
@@ -117,28 +160,42 @@ export function BubbleField({ holdings }: Props) {
       img.src = `/crypto-logos/${holding.symbol.toLowerCase()}.svg`;
 
       for (let i = 0; i < count; i++) {
-        // Spawn in upper half so they fall down into view
-        const x = BUBBLE_RADIUS * 2 + Math.random() * (W - BUBBLE_RADIUS * 4);
-        const y = BUBBLE_RADIUS * 2 + Math.random() * (H * 0.5);
+        const { x, y } = spawnPts[spawnIdx++] ?? {
+          x: BUBBLE_RADIUS + Math.random() * (W - BUBBLE_RADIUS * 2),
+          y: BUBBLE_RADIUS + Math.random() * (H - BUBBLE_RADIUS * 2),
+        };
         const body = Bodies.circle(x, y, BUBBLE_RADIUS, {
-          restitution: 0.2,
-          frictionAir: 0.01,
-          friction: 0.05,
+          restitution: 0,
+          frictionAir: 0.03,
+          friction: 0.1,
           label: holding.symbol,
           collisionFilter: { category: 0x0001, mask: 0x0001 | 0x0002 },
         });
         Body.setAngle(body, Math.random() * Math.PI * 2);
-        Body.setVelocity(body, { x: (Math.random() - 0.5) * 4, y: 0 });
+        Body.setVelocity(body, { x: (Math.random() - 0.5) * 2, y: 0 });
         Composite.add(engine.world, body);
         bubbles.push({ body, holding, color, img });
       }
     });
 
-    // Move repeller to cursor position before each physics step
+    // Move repeller to cursor position before each physics step.
+    // Also wake any sleeping bubble within the repeller's influence radius
+    // so static-body collisions aren't silently ignored.
+    const WAKE_RADIUS = REPELLER_RADIUS * 2.5;
     Events.on(engine, "beforeUpdate", () => {
       const pos = mouseRef.current ?? { x: -500, y: -500 };
       Body.setPosition(repeller, pos);
       Body.setVelocity(repeller, { x: 0, y: 0 });
+
+      if (!mouseRef.current) return;
+      const { x: mx, y: my } = mouseRef.current;
+      for (const { body } of bubbles) {
+        const dx = body.position.x - mx;
+        const dy = body.position.y - my;
+        if (dx * dx + dy * dy < WAKE_RADIUS * WAKE_RADIUS) {
+          Sleeping.set(body, false);
+        }
+      }
     });
 
     // Hard clamp: snap any escaped bubble back inside bounds and cap speed
