@@ -87,6 +87,8 @@ function distributeBubbles(
   return items.map((r) => ({ holding: r.holding, count: 1 + r.extra }));
 }
 
+const DOT_REVEAL_MS = 450;
+
 type BubbleEntry = {
   body: Matter.Body;
   holding: Holding;
@@ -118,13 +120,14 @@ export function BubbleField({ holdings }: Props) {
       enableSleeping: true,
     });
 
-    // Walls — top, bottom, left, right
+    // Walls — top wall acts as the "lid" holding bubbles above the canvas
     const wt = 60;
+    const topWall = Bodies.rectangle(W / 2, -wt / 2, W + wt * 2, wt, { isStatic: true, label: "wall" });
     Composite.add(engine.world, [
-      Bodies.rectangle(W / 2, -wt / 2, W + wt * 2, wt, { isStatic: true }),
-      Bodies.rectangle(W / 2, H + wt / 2, W + wt * 2, wt, { isStatic: true }),
-      Bodies.rectangle(-wt / 2, H / 2, wt, H + wt * 2, { isStatic: true }),
-      Bodies.rectangle(W + wt / 2, H / 2, wt, H + wt * 2, { isStatic: true }),
+      topWall,
+      Bodies.rectangle(W / 2, H + wt / 2, W + wt * 2, wt, { isStatic: true, label: "wall" }),
+      Bodies.rectangle(-wt / 2, H / 2, wt, H + wt * 2, { isStatic: true, label: "wall" }),
+      Bodies.rectangle(W + wt / 2, H / 2, wt, H + wt * 2, { isStatic: true, label: "wall" }),
     ]);
 
     // Invisible repeller — static circle body that tracks the cursor.
@@ -141,7 +144,7 @@ export function BubbleField({ holdings }: Props) {
     });
     Composite.add(engine.world, repeller);
 
-    // Bubbles — scale count so total bubble area ≈ 60% of container
+    // Bubbles — scale count so total bubble area ≈ 55% of container
     const totalBubbles = Math.max(
       holdings.length,
       Math.floor((W * H * FILL_RATIO) / (Math.PI * BUBBLE_RADIUS * BUBBLE_RADIUS))
@@ -149,34 +152,58 @@ export function BubbleField({ holdings }: Props) {
     const distribution = distributeBubbles(holdings, totalBubbles);
     const bubbles: BubbleEntry[] = [];
 
-    // Poisson disk positions — random-feeling but zero initial overlap
-    const spawnPts = samplePositions(totalBubbles, W, H, BUBBLE_RADIUS);
-    let spawnIdx = 0;
-
+    // Build a flat shuffled list so same-token bubbles aren't clumped in the grid
+    type BubbleDef = { holding: typeof distribution[0]["holding"]; color: string; img: HTMLImageElement };
+    const allDefs: BubbleDef[] = [];
     distribution.forEach(({ holding, count }) => {
       const color = symbolColor(holding.symbol);
-
       const img = new Image();
       img.src = `/crypto-logos/${holding.symbol.toLowerCase()}.svg`;
-
-      for (let i = 0; i < count; i++) {
-        const { x, y } = spawnPts[spawnIdx++] ?? {
-          x: BUBBLE_RADIUS + Math.random() * (W - BUBBLE_RADIUS * 2),
-          y: BUBBLE_RADIUS + Math.random() * (H - BUBBLE_RADIUS * 2),
-        };
-        const body = Bodies.circle(x, y, BUBBLE_RADIUS, {
-          restitution: 0.5,
-          frictionAir: 0.008,
-          friction: 0.05,
-          label: holding.symbol,
-          collisionFilter: { category: 0x0001, mask: 0x0001 | 0x0002 },
-        });
-        Body.setAngle(body, Math.random() * Math.PI * 2);
-        Body.setVelocity(body, { x: (Math.random() - 0.5) * 2, y: 0 });
-        Composite.add(engine.world, body);
-        bubbles.push({ body, holding, color, img });
-      }
+      for (let i = 0; i < count; i++) allDefs.push({ holding, color, img });
     });
+    for (let i = allDefs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allDefs[i], allDefs[j]] = [allDefs[j], allDefs[i]];
+    }
+
+    // Arrange in a grid ABOVE the canvas, piled on top of the lid
+    const cellSize = BUBBLE_RADIUS * 2 + 4;
+    const cols = Math.max(1, Math.floor(W / cellSize));
+
+    allDefs.forEach(({ holding, color, img }, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const x = cellSize / 2 + col * cellSize + (Math.random() - 0.5) * cellSize * 0.6;
+      const y = -(wt + BUBBLE_RADIUS + row * cellSize + (Math.random() - 0.5) * cellSize * 0.6);
+      const body = Bodies.circle(x, y, BUBBLE_RADIUS, {
+        restitution: 0.65,
+        frictionAir: 0.008,
+        friction: 0.05,
+        label: holding.symbol,
+        collisionFilter: { category: 0x0001, mask: 0x0001 | 0x0002 },
+      });
+      Body.setAngle(body, Math.random() * Math.PI * 2);
+      Composite.add(engine.world, body);
+      bubbles.push({ body, holding, color, img });
+    });
+
+    // When dot reveal finishes, remove the lid — all bubbles cascade into the canvas
+    let lidClosable = false;
+    let lidClosed = false;
+    const dropTimeouts: ReturnType<typeof setTimeout>[] = [];
+    dropTimeouts.push(setTimeout(() => {
+      Composite.remove(engine.world, topWall);
+      for (const { body } of bubbles) {
+        Sleeping.set(body, false);
+        Body.setVelocity(body, {
+          x: (Math.random() - 0.5) * 12,
+          y: Math.random() * 3,
+        });
+        Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.4);
+      }
+    }, DOT_REVEAL_MS));
+    // Start checking after bubbles have had time to enter
+    dropTimeouts.push(setTimeout(() => { lidClosable = true; }, DOT_REVEAL_MS + 1000));
 
     // Track repeller's real frame-to-frame movement so collision impulses carry
     // actual momentum instead of hitting with zero velocity.
@@ -208,11 +235,21 @@ export function BubbleField({ holdings }: Props) {
     // Hard clamp: snap any escaped bubble back inside bounds and cap speed
     const MAX_SPEED = 35;
     Events.on(engine, "afterUpdate", () => {
+      // Re-close the lid once every bubble has entered the canvas
+      if (lidClosable && !lidClosed) {
+        const allInside = bubbles.every(({ body }) => body.position.y > 0);
+        if (allInside) {
+          Composite.add(engine.world, topWall);
+          lidClosed = true;
+        }
+      }
+
       for (const { body } of bubbles) {
         const { x, y } = body.position;
         const r = BUBBLE_RADIUS;
+        // Only clamp sides and bottom — top is open for the waterfall entry
         const cx = Math.max(r, Math.min(W - r, x));
-        const cy = Math.max(r, Math.min(H - r, y));
+        const cy = Math.min(H - r, y);
         if (cx !== x || cy !== y) {
           Body.setPosition(body, { x: cx, y: cy });
         }
@@ -231,9 +268,13 @@ export function BubbleField({ holdings }: Props) {
     Runner.run(runner, engine);
 
     const ctx = canvas.getContext("2d")!;
+    const animStart = performance.now();
     let raf = 0;
 
     const render = () => {
+      const now = performance.now();
+      const elapsed = now - animStart;
+
       ctx.clearRect(0, 0, W, H);
 
       // Clip everything to the rounded container shape (rounded-2xl = 16px)
@@ -242,14 +283,15 @@ export function BubbleField({ holdings }: Props) {
       ctx.roundRect(0, 0, W, H, 16);
       ctx.clip();
 
-      // Subtle white gradient — 10% at top fading to 3% at bottom
+      // Subtle white gradient — fades in alongside the dot reveal
+      const bgProgress = Math.min(1, elapsed / DOT_REVEAL_MS);
       const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, "rgba(255,255,255,0.03)");
-      grad.addColorStop(1, "rgba(255,255,255,0.10)");
+      grad.addColorStop(0, `rgba(255,255,255,${(0.03 * bgProgress).toFixed(3)})`);
+      grad.addColorStop(1, `rgba(255,255,255,${(0.10 * bgProgress).toFixed(3)})`);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
 
-      // Dot grid — 20px inset padding on all sides, centered within that area
+      // Dot grid — revealed top-to-bottom over DOT_REVEAL_MS
       const spacing = 28;
       const dotRadius = 1;
       const pad = 20;
@@ -257,9 +299,10 @@ export function BubbleField({ holdings }: Props) {
       const gridH = H - pad * 2;
       const xStart = pad + (gridW % spacing) / 2;
       const yStart = pad + (gridH % spacing) / 2;
+      const revealY = pad + gridH * Math.min(1, elapsed / DOT_REVEAL_MS);
       ctx.fillStyle = "rgba(255,255,255,0.35)";
       for (let gx = xStart; gx <= W - pad; gx += spacing) {
-        for (let gy = yStart; gy <= H - pad; gy += spacing) {
+        for (let gy = yStart; gy <= revealY; gy += spacing) {
           ctx.beginPath();
           ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
           ctx.fill();
@@ -267,13 +310,15 @@ export function BubbleField({ holdings }: Props) {
       }
 
       for (const { body, holding, color, img } of bubbles) {
+        // Skip if fully above the visible canvas
+        if (body.position.y + BUBBLE_RADIUS < 0) continue;
+
         const { x, y } = body.position;
         const angle = body.angle;
         const r = BUBBLE_RADIUS;
         const logoReady = img.complete && img.naturalWidth > 0;
         const logoFailed = img.complete && img.naturalWidth === 0;
 
-        // Translate to bubble center, rotate, draw, restore
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);
@@ -318,6 +363,7 @@ export function BubbleField({ holdings }: Props) {
 
     return () => {
       cancelAnimationFrame(raf);
+      dropTimeouts.forEach(clearTimeout);
       Runner.stop(runner);
       Engine.clear(engine);
       container.removeEventListener("mousemove", onMove);
