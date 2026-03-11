@@ -1,6 +1,7 @@
  "use client";
 
 import { HoldingsTable } from "../components/HoldingsTable";
+import { BubbleField } from "../components/BubbleField";
 import { mockHoldings, type Holding } from "../lib/mockData";
 import { formatCurrency, formatPercentage } from "../lib/format";
 
@@ -59,8 +60,10 @@ export default function Home() {
     <main className="h-screen flex flex-col bg-[#0a0a0a] p-5">
       <div className="flex flex-1 gap-4 min-h-0">
 
-        {/* Left column — dark placeholder, fills remaining width */}
-        <div className="flex-1 min-h-0 rounded-2xl bg-[#141414]" />
+        {/* Left column — bubble physics field */}
+        <div className="flex-1 min-h-0 rounded-2xl overflow-hidden">
+          <BubbleField holdings={mockHoldings} />
+        </div>
 
         {/* Right column — 450px fixed, vertical stack */}
         <div className="w-[450px] shrink-0 flex flex-col gap-0 h-full">
